@@ -20,9 +20,9 @@ const layout = async({children}) => {
 
         <section className='flex h-full flex-1 flex-col'>
             {/* mobileNavigation  */}
-            <MobileNavigation fullName={currentUser.fullName} email={currentUser.email}/>
+            <MobileNavigation fullName={currentUser.fullName} email={currentUser.email} userId={currentUser.id}/>
              {/* Header */}
-             <Header/>
+             <Header userId={currentUser.id}/>
             <div>{children}</div>
         </section>
         

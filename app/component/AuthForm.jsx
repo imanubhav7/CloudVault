@@ -17,9 +17,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { formSchema } from "../lib/schema";
 import OTPModal from "./OTPModal";
-import { sendOTP, signIn } from "@/action/otp-action";
+import { sendOTP } from "@/action/otp-action";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { signIn } from "@/action/auth";
 const AuthForm = ({ type }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);

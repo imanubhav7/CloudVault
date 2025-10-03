@@ -1,10 +1,9 @@
-"use client";
+'use client'
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -16,8 +15,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import FileUploader from "./FileUploader";
+import { signOut } from "@/action/auth";
+import { toast } from "sonner";
 
-const MobileNavigation = ({ fullName, email, ownerId }) => {
+
+const MobileNavigation = ({ fullName, email, userId }) => {
+  
   const [open, setOpen] = useState(false);
   const pathName = usePathname();
 
@@ -90,9 +93,16 @@ const MobileNavigation = ({ fullName, email, ownerId }) => {
             <Separator className="bg-ligh-200/20 my-4" />
 
             <div className="flex flex-col justify-between gap-5 pb-5">
-              <FileUploader/>
+             <FileUploader ownerId={userId} />
               <Button className="h5 flex h-[52px] w-full items-center gap-4 rounded-full bg-brand/10 px-6 text-brand shadow-none transition-all hover:bg-brand/20"
-              onClick={() => {}}
+              onClick={async() => {
+                try {
+                  await signOut();
+                  toast.success("You have been logged out successfully ")
+                } catch (error) {
+                  toast.error("Logout failed")
+                }
+              }}
               >
                 <Image
                   src="/assets/icons/logout.svg"

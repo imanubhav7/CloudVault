@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
         className={`${poppins.variable} antialiased`}
       >
        <main>{children}</main> 
-       <Toaster/>
+       <Toaster />
         
       </body>
     </html>
