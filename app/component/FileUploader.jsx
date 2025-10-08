@@ -13,7 +13,7 @@ import { usePathname } from "next/navigation";
 const FileUploader = ({ ownerId, className }) => {
   const [files, setFiles] = useState([]);
   const path = usePathname();
-
+  
   
   const onDrop = useCallback(async (acceptedFiles) => {
     setFiles(acceptedFiles);
@@ -29,7 +29,9 @@ const FileUploader = ({ ownerId, className }) => {
             prevFiles.filter((f) => {
               f.name !== file.name;
             })
+            
           );
+          
         }
       });
     });

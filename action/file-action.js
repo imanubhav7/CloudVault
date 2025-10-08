@@ -4,8 +4,9 @@ import { createAdminClient } from "@/lib/appwrite"
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { constructFileUrl, getFileType, parseStringfy } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
-import { ID } from "node-appwrite";
+import { ID, Query } from "node-appwrite";
 import {InputFile} from 'node-appwrite/file'
+import { getCurrentUser } from "./user-action";
 
 
 export const uploadFiles = async({file, ownerId, path}) => {
@@ -50,4 +51,59 @@ export const uploadFiles = async({file, ownerId, path}) => {
     } catch (error) {
         throw new Error(error, 'Failed to upload file')
     }
+}
+
+  //  const createQueries =(currentUser) => {
+  //     const queries = [
+      
+  //       Query.equal("owner", [currentUser.id])
+        
+  //     ]
+  //     return queries
+  //  }
+
+export const getFiles = async() => {
+  const {databases} = await createAdminClient();
+
+  try {
+    const currentUser = await getCurrentUser();
+   
+    if(!currentUser) throw new Error ("User not Found")
+
+      const queries = [Query.equal("owner", [currentUser.id])];
+      // console.log(queries)
+       const files = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.fileCollectionId,
+      queries,
+      ["owner"] 
+       )
+       console.log("Fetched files:", files);
+       
+      return parseStringfy(files)
+    
+  } catch (error) {
+    throw new Error (error, "Failed to get the Files")
+  }
+}
+
+
+export const renameFile = async({fileId, name, extension, path}) => {
+      const {databases} = await createAdminClient();
+      try {
+          const newName =`${name}.${extension}`;
+          const updatedFile = await databases.updateDocument(
+             appwriteConfig.databaseId,
+          appwriteConfig.fileCollectionId,
+          fileId,{
+            name: newName,
+          },
+          );
+          revalidatePath(path)
+          parseStringfy(updatedFile)
+         return true;
+
+      } catch (error) {
+          throw new Error (error, "Failed to rename the file  ")
+      }
 }
