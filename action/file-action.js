@@ -70,7 +70,13 @@ export const getFiles = async() => {
    
     if(!currentUser) throw new Error ("User not Found")
 
-      const queries = [Query.equal("owner", [currentUser.id])];
+      
+      const queries = [
+      Query.or(
+       [Query.equal("owner", [currentUser.id]),       
+        Query.contains("users", currentUser.email)      
+      ])
+    ];
       // console.log(queries)
        const files = await databases.listDocuments(
       appwriteConfig.databaseId,
@@ -78,8 +84,7 @@ export const getFiles = async() => {
       queries,
       ["owner"] 
        )
-       console.log("Fetched files:", files);
-       
+      //  console.log("Fetched files:", files);    
       return parseStringfy(files)
     
   } catch (error) {
@@ -87,7 +92,7 @@ export const getFiles = async() => {
   }
 }
 
-
+// Rename File 
 export const renameFile = async({fileId, name, extension, path}) => {
       const {databases} = await createAdminClient();
       try {
@@ -107,3 +112,46 @@ export const renameFile = async({fileId, name, extension, path}) => {
           throw new Error (error, "Failed to rename the file  ")
       }
 }
+
+// UpdateFile or Share user 
+export const updateFileUsers = async({fileId, email, path}) => {
+      const {databases} = await createAdminClient();
+
+      try {
+       
+          const existingUser = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.userCollectionId,
+            [Query.contains("email", email)]
+          )
+
+          const validEmails = existingUser.documents.map(u => u.email);
+          console.log(validEmails)
+          
+          if(validEmails.length ===0){
+           return { success: false, message: "No registered users found" };
+
+          }
+
+
+          const updatedFile = await databases.updateDocument(
+             appwriteConfig.databaseId,
+          appwriteConfig.fileCollectionId,
+          fileId,{
+            users: email,
+          },
+          );
+          revalidatePath(path)
+          // parseStringfy(updatedFile)
+           return {
+      success: true,
+      message: `File shared with ${validEmails.length} user(s) successfully`,
+      file: parseStringfy(updatedFile),
+    };   
+      } catch (error) {
+           console.error("Error sharing file:", error);
+    return { success: false, message: "Failed to share file" };
+      }
+}
+
+

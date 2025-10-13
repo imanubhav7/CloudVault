@@ -1,5 +1,5 @@
 "use client";
-import { renameFile } from "@/action/file-action";
+import { renameFile, updateFileUsers } from "@/action/file-action";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -18,7 +18,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
-import { FileDetails } from "./ActionsModalContent";
+import { FileDetails, ShareFile } from "./ActionsModalContent";
+import { toast } from "sonner";
+
 
 const ActionDropDown = ({ file }) => {
   const [isModelOpen, setIsModelOpen] = useState(false);
@@ -27,6 +29,7 @@ const ActionDropDown = ({ file }) => {
   const[name, setName] = useState(file.name)
   const [isLoading, setIsLoading] = useState(false)
   const path = usePathname()
+  const [email,setEmail] = useState([]);
 
   const closeAllModals = () => {
     setIsModelOpen(false)
@@ -39,20 +42,74 @@ const ActionDropDown = ({ file }) => {
   const handleAction= async () => {
     if(!action) return;
     setIsLoading(true)
-    let success = false;
+    
+    // let success = false;
+    try {
+         
     const actions = {
       rename: () => renameFile({fileId: file.$id,name,extension:file.extension, path}),
       
-      share:() => console.log("Share"),
+      share:() => updateFileUsers({fileId: file.$id, email, path}),
       delete : () => console.log("Delete")
 
     }
     // console.log(success)
-    success = await actions[action.value]();
-    if(success) closeAllModals();
+    // success = await actions[action.value]();
+    // if(success) closeAllModals();
 
-    setIsLoading(false)
+    const fn = actions[action.value];
+    if(!fn){
+      toast.error("Invalid action selected ❌");
+      setIsLoading(false);
+      return;
+
+    }
+    const res = await fn();
+
+    if(res?.success){
+      toast.success(res.message || `${action.label} successfull`)
+      closeAllModals();
+    }
+    else{
+      toast.error(res?.message || `${action.label} failed`)
+    }
   }
+ catch (err) {
+    console.error("Action failed:", err);
+    toast.error(`Failed to ${action?.label?.toLowerCase?.() || "perform action"}`);
+  } finally {
+    setIsLoading(false);
+  }
+  }
+
+  const handleRemoveUser = async(emailToRemove) => {
+   try {
+    // ✅ Create a new array without the removed email
+    const updatedEmails = email.filter((e) => e !== emailToRemove);
+
+    // ✅ Update database
+    const res = await updateFileUsers({
+      fileId: file.$id,
+      emails: updatedEmails, // <-- MUST be plural & an array
+      path,
+    });
+
+    // ✅ Update frontend only if DB update succeeded
+    if (res?.success) {
+      setEmail(updatedEmails);
+      toast.success(`${emailToRemove} removed successfully 🗑️`);
+      closeAllModals();
+    } else {
+      toast.error("Failed to update shared users ");
+    }
+  } catch (err) {
+    console.error("Error removing user:", err);
+    toast.error("Something went wrong while removing user ");
+  }
+};
+    
+
+  
  
   const renderDialogContent = () => {
     if(!action) return null;
@@ -60,15 +117,24 @@ const ActionDropDown = ({ file }) => {
     return (
 
       <DialogContent className='shad-dialog button'>
-        <DialogHeader>
-          <DialogTitle>
+        <DialogHeader >
+          <DialogTitle className='text-center mb-3'>
             {label}
           </DialogTitle>
+
+          {/* Rename  */}
           {value === 'rename' && (<Input type='text' value={name}
           onChange={(e) => setName(e.target.value)}
           />)}
 
-          {value && 'details' && <FileDetails file={file}/>}
+
+          {/* Details  */}
+          {value === 'details' && <FileDetails file={file}/>}
+
+          {/* share  */}
+          {value === 'share' && (
+            <ShareFile file={file} onInputChange={setEmail} onRemove={handleRemoveUser}/>
+          )}
 
         </DialogHeader>
         {['rename', 'delete', 'share'].includes(value) && (
