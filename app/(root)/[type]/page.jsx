@@ -1,13 +1,15 @@
 import { getFiles } from "@/action/file-action";
 import Card from "@/app/component/Card";
 import Sort from "@/app/component/Sort";
+import { getFileTypesParams } from "@/lib/utils";
 import React from "react";
 
-const Page = async ({ params }) => {
+const Page = async ({ searchParams, params }) => {
   const type = (await params)?.type || " ";
-
-    const files = await getFiles();
-
+    const types = getFileTypesParams(type)
+    const searchText = ((await searchParams)?.query) || ""
+    const sort = ((await searchParams)?. sort) || ""
+    const files = await getFiles({types,searchText,sort});
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-8">
       <section className="w-full">

@@ -1,5 +1,5 @@
 "use client";
-import { renameFile, updateFileUsers } from "@/action/file-action";
+import { deleteFile, renameFile, updateFileUsers } from "@/action/file-action";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -30,6 +30,7 @@ const ActionDropDown = ({ file }) => {
   const [isLoading, setIsLoading] = useState(false)
   const path = usePathname()
   const [email,setEmail] = useState([]);
+  
 
   const closeAllModals = () => {
     setIsModelOpen(false)
@@ -49,8 +50,8 @@ const ActionDropDown = ({ file }) => {
     const actions = {
       rename: () => renameFile({fileId: file.$id,name,extension:file.extension, path}),
       
-      share:() => updateFileUsers({fileId: file.$id, email, path}),
-      delete : () => console.log("Delete")
+      share:() => updateFileUsers({fileId: file.$id, email, path, mode:'add'}),
+      delete : () => deleteFile({fileId:file.$id, bucketFileId:file.bucketFileId, path})
 
     }
     // console.log(success)
@@ -82,34 +83,97 @@ const ActionDropDown = ({ file }) => {
   }
   }
 
-  const handleRemoveUser = async(emailToRemove) => {
-   try {
-    // ✅ Create a new array without the removed email
-    const updatedEmails = email.filter((e) => e !== emailToRemove);
+// const handleAction = async () => {
+//   if (!action) return;
+//   setIsLoading(true);
 
-    // ✅ Update database
-    const res = await updateFileUsers({
-      fileId: file.$id,
-      emails: updatedEmails, // <-- MUST be plural & an array
-      path,
-    });
+//   try {
+//     let response;
 
-    // ✅ Update frontend only if DB update succeeded
-    if (res?.success) {
-      setEmail(updatedEmails);
-      toast.success(`${emailToRemove} removed successfully 🗑️`);
-      closeAllModals();
-    } else {
-      toast.error("Failed to update shared users ");
-    }
-  } catch (err) {
-    console.error("Error removing user:", err);
-    toast.error("Something went wrong while removing user ");
-  }
-};
+//     // Dynamically call action
+//     if (action.value === "rename") {
+//       response = await renameFile({
+//         fileId: file.$id,
+//         name,
+//         extension: file.extension,
+//         path,
+//       });
+//     } 
+//     else if (action.value === "share") {
+//       response = await updateFileUsers({
+//         fileId: file.$id,
+//         emails: email, // ✅ must be an array of emails
+//         path,
+//         mode: "add", // 👈 share mode (adds users)
+//       });
+//     } 
+//     else if (action.value === "delete") {
+//       console.log("Delete action");
+//       toast.info("Delete feature coming soon!");
+//       response = { success: false };
+//     }
+
+//     // ✅ Handle success / error messages
+//     if (response?.success) {
+//       toast.success(response.message || "Action completed successfully ✅");
+//       closeAllModals();
+//     } else {
+//       toast.error(response?.message || "Something went wrong ❌");
+//     }
+//   } catch (error) {
+//     console.error("Action failed:", error);
+//     toast.error(error.message || "Unexpected error occurred ❌");
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
+
+  const handleRemoveUser = async(emails) => { 
     
+    const updateEmails = email.filter((e) => e !== emails);
 
-  
+    const success = await updateFileUsers({
+      fileId: file.$id,
+      email: updateEmails,
+      path,
+      mode: 'remove'
+    })
+
+    if(success) {
+      
+      setEmail(updateEmails)}
+      closeAllModals()
+
+  }
+
+//   const handleRemoveUser = async (emailToRemove) => {
+//   // Filter out the user being removed
+//   const updatedEmails = email.filter((e) => e !== emailToRemove);
+
+//   setIsLoading(true);
+//   try {
+//     const response = await updateFileUsers({
+//       fileId: file.$id,
+//       email: updatedEmails,
+//       path,
+//       mode: "remove", // 👈 remove mode skips revalidation
+//     });
+
+//     if (response?.success) {
+//       toast.success(response.message || "User removed successfully ✅");
+//       setEmail(updatedEmails); // update local state
+//       closeAllModals();
+//     } else {
+//       toast.error(response?.message || "Failed to remove user ❌");
+//     }
+//   } catch (error) {
+//     console.error("Remove user failed:", error);
+//     toast.error(error.message || "Error removing user ❌");
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
+
  
   const renderDialogContent = () => {
     if(!action) return null;
@@ -134,6 +198,13 @@ const ActionDropDown = ({ file }) => {
           {/* share  */}
           {value === 'share' && (
             <ShareFile file={file} onInputChange={setEmail} onRemove={handleRemoveUser}/>
+          )}
+          {/* delete  */}
+          {value === 'delete' && (
+            <p className="text-center text-light-100">
+              Are you sure you want to delete {` `}
+              <span className="font-medium text-brand-100">{file.name}</span>
+            </p>
           )}
 
         </DialogHeader>
